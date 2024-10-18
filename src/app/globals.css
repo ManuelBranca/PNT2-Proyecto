@@ -24,4 +24,12 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+
+  .btn {
+    @apply bg-foreground text-background py-2 px-4 rounded;
+  }
+
+  .btn:hover {
+    @apply bg-[#383838] dark:bg-[#ccc];
+  }
 }
