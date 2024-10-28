@@ -4,41 +4,105 @@ const DATABASE = "ORT-database";
 const USERS = "users";
 import bcryptjs from "bcryptjs";
 
-export async function addUser(user){
-    console.log("Entro al addUser")
-    
-    if (!user.email) {
-        throw new Error("El email es requerido");
-    }
-    if (!user.password) {
-        throw new Error("La contraseña es requerida");
-    }
-    if (!user.name) {
-        throw new Error("El nombre es requerido");
-    }
-    if (!user.lastname) {
-        throw new Error("El apellido es requerido");
-    }
-    if (!user.username) {
-        throw new Error("El username es requerido");
-    }
+export async function addUser(user) {
+  console.log("Entro al addUser");
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(user.email)) {
-        throw new Error("El email no es válido");
-    }
+  if (!user.email) {
+    throw new Error("El email es requerido");
+  }
+  if (!user.password) {
+    throw new Error("La contraseña es requerida");
+  }
+  if (!user.name) {
+    throw new Error("El nombre es requerido");
+  }
+  if (!user.lastname) {
+    throw new Error("El apellido es requerido");
+  }
+  if (!user.username) {
+    throw new Error("El username es requerido");
+  }
 
-    const userModel = {
-        email: user.email,
-        password: await bcryptjs.hash(user.password, 10),
-        nombre: user.name,
-        apellido: user.lastname,
-        username: user.username,
-        carrito: [] 
-    };
-    
-    const clientMongo = await getConnection();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(user.email)) {
+    throw new Error("El email no es válido");
+  }
 
-    const result = clientMongo.db(DATABASE).collection(USERS).insertOne(userModel)
-    return result;
+  const userModel = {
+    email: user.email,
+    password: await bcryptjs.hash(user.password, 10),
+    name: user.name,
+    lastname: user.lastname,
+    username: user.username,
+    carrito: [],
+  };
+
+  const clientMongo = await getConnection();
+
+  const result = clientMongo
+    .db(DATABASE)
+    .collection(USERS)
+    .insertOne(userModel);
+  return result;
+}
+
+export async function getUsers() {
+  const clientMongo = await getConnection();
+
+  const users = await clientMongo
+    .db(DATABASE)
+    .collection(USERS)
+    .find()
+    .toArray();
+
+  return users;
+}
+
+export async function deleteUser(id) {
+  const clientMongo = await getConnection();
+
+  const result = await clientMongo
+    .db(DATABASE)
+    .collection(USERS)
+    .deleteOne({ _id: new ObjectId(id) });
+
+  if (result.deletedCount === 0) {
+    throw new Error("Usuario no encontrado o no pudo ser eliminado");
+  }
+
+  return { message: "Usuario eliminado exitosamente" };
+}
+
+export async function getUserById(id) {
+  const clientMongo = await getConnection();
+
+  const user = await clientMongo
+    .db(DATABASE)
+    .collection(USERS)
+    .findOne({ _id: new ObjectId(id) });
+
+  return user;
+}
+
+export async function updateUser(id, updatedUser) {
+  const clientMongo = await getConnection();
+  const fieldsToUpdate = {};
+
+  if (updatedUser.email) fieldsToUpdate.email = updatedUser.email;
+  if (updatedUser.password)
+    fieldsToUpdate.password = await bcryptjs.hash(updatedUser.password, 10);
+  if (updatedUser.name) fieldsToUpdate.name = updatedUser.name;
+  if (updatedUser.lastname) fieldsToUpdate.lastname = updatedUser.lastname;
+  if (updatedUser.username) fieldsToUpdate.username = updatedUser.username;
+
+  const result = await clientMongo
+    .db(DATABASE)
+    .collection(USERS)
+    .updateOne({ _id: new ObjectId(id) }, { $set: fieldsToUpdate });
+
+  if (result.matchedCount === 0) {
+    throw new Error("Usuario no encontrado o no pudo ser actualizado");
+  }
+
+  return { message: "Usuario actualizado exitosamente" };
 }
